@@ -1,0 +1,33 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_DEFAULT_REGION: "ca-central-1"
+    ECR_URI: "379694498501.dkr.ecr.ca-central-1.amazonaws.com/dci-assignment3"
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION \
+          | docker login --username AWS --password-stdin $ECR_URI
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION)
+      - echo "IMAGE_TAG = $IMAGE_TAG"
+
+  build:
+    commands:
+      - echo Build started...
+      - docker build -t $ECR_URI:$IMAGE_TAG .
+
+  post_build:
+    commands:
+      - echo Pushing image to ECR...
+      - docker push $ECR_URI:$IMAGE_TAG
+      - echo Creating imagedefinitions.json...
+      - printf '[{"name":"app","imageUri":"%s:%s"}]' $ECR_URI $IMAGE_TAG > imagedefinitions.json
+      - cat imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+
