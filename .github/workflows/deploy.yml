@@ -1,0 +1,99 @@
+name: Final Test CI/CD Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      ###########################################################
+      # 1. Checkout Code
+      ###########################################################
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      ###########################################################
+      # 2. Configure AWS Credentials (OIDC)
+      ###########################################################
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ca-central-1
+          role-to-assume: arn:aws:iam::379694498501:role/GithubOIDC
+
+
+      ###########################################################
+      # 3. Terraform Init + Validate + Apply
+      ###########################################################
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: terraform
+        run: terraform validate
+
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve
+
+
+      ###########################################################
+      # 4. Build Docker Image
+      ###########################################################
+      - name: Build Docker Image
+        working-directory: app
+        run: |
+          docker build -t final-test-api .
+
+
+      ###########################################################
+      # 5. Login to Amazon ECR
+      ###########################################################
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+
+      ###########################################################
+      # 6. Tag + Push Docker Image to ECR
+      ###########################################################
+      - name: Tag & Push Image to ECR
+        env:
+          AWS_ACCOUNT_ID: "379694498501"
+          AWS_REGION: "ca-central-1"
+          IMAGE_REPO: "ishwarya-dci-final"
+        run: |
+          echo "Tagging image..."
+          docker tag final-test-api:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO:latest
+
+          echo "Pushing image..."
+          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO:latest
+
+
+      ###########################################################
+      # 7. Force ECS Service Deployment (pull new image)
+      ###########################################################
+      - name: Force ECS New Deployment
+        env:
+          AWS_REGION: "ca-central-1"
+          CLUSTER_NAME: "ishwarya-dci-final-cluster"
+          SERVICE_NAME: "ishwarya-dci-final-service"
+        run: |
+          echo "Forcing ECS deployment..."
+          aws ecs update-service \
+            --cluster $CLUSTER_NAME \
+            --service $SERVICE_NAME \
+            --force-new-deployment \
+            --region $AWS_REGION
