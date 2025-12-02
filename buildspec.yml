@@ -9,7 +9,7 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region ca-central-1 | docker login --username AWS --password-stdin $ECR_URI
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URI
       - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION)
       - echo "IMAGE_TAG = $IMAGE_TAG"
 
@@ -17,13 +17,16 @@ phases:
     commands:
       - echo Build started...
       - docker build -t $ECR_URI:$IMAGE_TAG .
+      - docker tag $ECR_URI:$IMAGE_TAG $ECR_URI:latest
 
   post_build:
     commands:
       - echo Pushing image to ECR...
       - docker push $ECR_URI:$IMAGE_TAG
+      - docker push $ECR_URI:latest
+
       - echo Creating imagedefinitions.json...
-      - printf '[{"name":"ishwarya-dci-assign3","imageUri":"%s:%s"}]' $ECR_URI $IMAGE_TAG > imagedefinitions.json
+      - printf '[{"name":"ishwarya-dci-assign3","imageUri":"%s"}]' "$ECR_URI:$IMAGE_TAG" > imagedefinitions.json
       - cat imagedefinitions.json
 
 artifacts:
