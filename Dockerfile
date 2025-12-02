@@ -8,4 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app.py .
 
 ENV PORT=8080
-CMD gunicorn --bind 0.0.0.0:$PORT app:app
+CMD python3 app.py
