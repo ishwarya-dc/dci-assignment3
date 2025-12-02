@@ -17,7 +17,7 @@ steps:
       'northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/dci-app-repo/dci-app:$SHORT_SHA'
     ]
 
-  # Step 3: Deploy to Cloud Run (private, behind ALB)
+  # Step 3: Deploy to Cloud Run (private behind ALB)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -27,11 +27,9 @@ steps:
         '--region=northamerica-northeast2',
         '--platform=managed',
         '--execution-environment=gen2',
-        '--allow-unauthenticated=false',
         '--vpc-connector=dci-connector',
         '--ingress=internal-and-cloud-load-balancing'
       ]
 
 images:
   - 'northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/dci-app-repo/dci-app:$SHORT_SHA'
-
