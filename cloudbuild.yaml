@@ -1,3 +1,6 @@
+options:
+  logging: CLOUD_LOGGING_ONLY
+
 steps:
   # Step 1: Build Docker image
   - name: 'gcr.io/cloud-builders/docker'
@@ -14,7 +17,7 @@ steps:
       'northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/dci-app-repo/dci-app:$SHORT_SHA'
     ]
 
-  # Step 3: Deploy to Cloud Run (private, internal LB)
+  # Step 3: Deploy to Cloud Run (private, behind ALB)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -23,6 +26,7 @@ steps:
         '--image=northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/dci-app-repo/dci-app:$SHORT_SHA',
         '--region=northamerica-northeast2',
         '--platform=managed',
+        '--execution-environment=gen2',
         '--allow-unauthenticated=false',
         '--vpc-connector=dci-connector',
         '--ingress=internal-and-cloud-load-balancing'
@@ -30,3 +34,4 @@ steps:
 
 images:
   - 'northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/dci-app-repo/dci-app:$SHORT_SHA'
+
