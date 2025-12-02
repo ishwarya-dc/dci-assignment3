@@ -1,0 +1,32 @@
+steps:
+  # Step 1: Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build', '-t',
+      'northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/dci-app-repo/dci-app:$SHORT_SHA',
+      '.'
+    ]
+
+  # Step 2: Push image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'push',
+      'northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/dci-app-repo/dci-app:$SHORT_SHA'
+    ]
+
+  # Step 3: Deploy to Cloud Run (private, internal LB)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      [
+        'run', 'deploy', 'dci-cloudrun-app',
+        '--image=northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/dci-app-repo/dci-app:$SHORT_SHA',
+        '--region=northamerica-northeast2',
+        '--platform=managed',
+        '--allow-unauthenticated=false',
+        '--vpc-connector=dci-connector',
+        '--ingress=internal-and-cloud-load-balancing'
+      ]
+
+images:
+  - 'northamerica-northeast2-docker.pkg.dev/$PROJECT_ID/dci-app-repo/dci-app:$SHORT_SHA'
