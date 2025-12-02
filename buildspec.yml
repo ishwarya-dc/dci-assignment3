@@ -3,7 +3,7 @@ version: 0.2
 env:
   variables:
     AWS_DEFAULT_REGION: "ca-central-1"
-    ECR_URI: "379694498501.dkr.ecr.ca-central-1.amazonaws.com/dci-assignment3"
+    ECR_URI: "379694498501.dkr.ecr.ca-central-1.amazonaws.com/ishwarya-dci-assign3"
 
 phases:
   pre_build:
